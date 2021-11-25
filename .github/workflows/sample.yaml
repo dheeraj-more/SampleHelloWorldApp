@@ -68,5 +68,24 @@ jobs:
       - name: Docker Push
         run: docker push ${{ secrets.REGISTRY_USERNAME }}/helloworld:${{ github.sha }}
 
+  deploy-helloworld:
+    runs-on: ubuntu-latest
+    name: HelloWorld Kyma Deployment
+    needs: [helloworld-docker-image]
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v2
+
+      - name: Kubernetes set context
+        uses: Azure/k8s-set-context@v1.1
+        with:
+          cluster-type: generic
+          method: kubeconfig
+          kubeconfig: ${{ secrets.KUBECONFIG }}
+
+      - name: Deploy to Kyma
+        run: |
+          sed -i'' -e 's/:v1.2.0/:${{ github.sha }}/g' kyma/helloworld.yaml
+          kubectl apply -f  kyma
      
  
