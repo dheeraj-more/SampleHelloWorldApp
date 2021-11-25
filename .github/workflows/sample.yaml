@@ -71,6 +71,15 @@ jobs:
 
       - name:  Maven build
         run: mvn -B package --file pom.xml
+        
+      - name: Upload a helloworld Artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: helloworld-artifact
+          path: |
+            target/*.jar
+          if-no-files-found: error
+          retention-days: 3       
   helloworld-docker-image:
     runs-on: ubuntu-latest
     name: HelloWorld Docker build
@@ -82,7 +91,7 @@ jobs:
       - name: Download Artifacts
         uses: actions/download-artifact@v2
         with:
-          name: positivepay-artifact
+          name: helloworld-artifact
           path: target
 
       - name: Display downloaded artifacts
