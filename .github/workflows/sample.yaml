@@ -58,7 +58,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     name: Build
-    needs: [codacy-analysis, check-quality]
+    # needs: [codacy-analysis, check-quality]
     steps:
       - name: Checkout the code
         uses: actions/checkout@v2
