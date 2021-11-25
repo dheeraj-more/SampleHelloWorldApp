@@ -71,6 +71,36 @@ jobs:
 
       - name:  Maven build
         run: mvn -B package --file pom.xml
+  helloworld-docker-image:
+    runs-on: ubuntu-latest
+    name: HelloWorld Docker build
+    needs: [build]
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v2
+
+      - name: Download Artifacts
+        uses: actions/download-artifact@v2
+        with:
+          name: positivepay-artifact
+          path: target
+
+      - name: Display downloaded artifacts
+        run: ls -R
+        working-directory: target
+
+      - name: Docker build
+        run: docker build -t ${{ secrets.REGISTRY_USERNAME }}/helloworld:${{ github.sha }} -f Dockerfile helloworld
+
+      - name: Docker Login
+        uses: docker/login-action@v1.10.0
+        with:
+          registry: docker.io       # Server address of Docker registry. If not set then will default to Docker Hub
+          username: ${{ secrets.REGISTRY_USERNAME }}    # Username used to log against the Docker registry
+          password: ${{ secrets.REGISTRY_PASSWORD }}        # Password or personal access token used to log against the Docker registry
+
+      - name: Docker Push
+        run: docker push ${{ secrets.REGISTRY_USERNAME }}/helloworld:${{ github.sha }}
 
      
 
