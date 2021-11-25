@@ -1,24 +1,64 @@
-name: GitHub Actions Sample Hello World
-on: [push]
+name: Hello World App
+
+on:
+  push:
+    branches:
+      - 'master'
+   
+  workflow_dispatch:
+
 jobs:
-  Explore-GitHub-Actions:
+
+  check-quality:
     runs-on: ubuntu-latest
+    name: Code Quality
     steps:
-      - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
-      - run: echo "🐧 This job is now running on a ${{ runner.os }} server hosted by GitHub!"
-      - run: echo "🔎 The name of your branch is ${{ github.ref }} and your repository is ${{ github.repository }}."
-      - name: Check out repository code
-        uses: actions/checkout@v2
-      - run: echo "💡 The ${{ github.repository }} repository has been cloned to the runner."
-      - run: echo "🖥️ The workflow is now ready to test your code on the runner."
-      - name: List files in the repository
-        run: |
-          ls ${{ github.workspace }}
-      - run: echo "🍏 This job's status is ${{ job.status }}."
-      
-    build:
+      - name: Check code meets quality standards
+        id: code-inspector
+        uses: codeinspectorio/github-action@master
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          code_inspector_api_token: ${{ secrets.CODE_INSPECTOR_API_TOKEN }}
+          code_inspector_access_key: ${{ secrets.CODE_INSPECTOR_ACCESS_KEY }}
+          code_inspector_secret_key: ${{ secrets.CODE_INSPECTOR_SECRET_KEY }}
+          force_ref: 'none'
+          min_quality_grade: 'WARNING'
+          min_quality_score: '50'
+          max_defects_rate: '0.0501'
+          max_complex_functions_rate: '0.0001'
+          max_long_functions_rate: '0.0001'
+          project_name: ''
+          max_timeout_sec: '600'
+
+  codacy-analysis:
+    runs-on: ubuntu-latest
+    name: Codacy Analysis
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@main
+
+      - name: Run Codacy Analysis CLI
+        uses: codacy/codacy-analysis-cli-action@master
+        with:
+          output: results.sarif
+          format: sarif
+          # Adjust severity of non-security issues
+          gh-code-scanning-compat: true
+          # Force 0 exit code to allow SARIF file generation
+          # This will handover control about PR rejection to the GitHub side
+          max-allowed-issues: 2147483647
+
+          # Upload the SARIF file generated in the previous step
+          # - name: Upload SARIF results file
+          #   uses: github/codeql-action/upload-sarif@main
+          #   with:
+          #     sarif_file: results.sarif
+
+
+  build:
     runs-on: ubuntu-latest
     name: Build
+    needs: [codacy-analysis, check-quality]
     steps:
       - name: Checkout the code
         uses: actions/checkout@v2
@@ -29,5 +69,9 @@ jobs:
           java-version: 11
           cache: 'maven'
 
-      - name: PositivePay Maven build
-        run: mvn -B package --file positivepay-service/pom.xml   
+      - name:  Maven build
+        run: mvn -B package --file pom.xml
+
+     
+
+ 
