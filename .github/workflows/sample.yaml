@@ -9,50 +9,6 @@ on:
 
 jobs:
 
-  check-quality:
-    runs-on: ubuntu-latest
-    name: Code Quality
-    steps:
-      - name: Check code meets quality standards
-        id: code-inspector
-        uses: codeinspectorio/github-action@master
-        with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          code_inspector_api_token: ${{ secrets.CODE_INSPECTOR_API_TOKEN }}
-          code_inspector_access_key: ${{ secrets.CODE_INSPECTOR_ACCESS_KEY }}
-          code_inspector_secret_key: ${{ secrets.CODE_INSPECTOR_SECRET_KEY }}
-          force_ref: 'none'
-          min_quality_grade: 'WARNING'
-          min_quality_score: '50'
-          max_defects_rate: '0.0501'
-          max_complex_functions_rate: '0.0001'
-          max_long_functions_rate: '0.0001'
-          project_name: ''
-          max_timeout_sec: '600'
-
-  codacy-analysis:
-    runs-on: ubuntu-latest
-    name: Codacy Analysis
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@main
-
-      - name: Run Codacy Analysis CLI
-        uses: codacy/codacy-analysis-cli-action@master
-        with:
-          output: results.sarif
-          format: sarif
-          # Adjust severity of non-security issues
-          gh-code-scanning-compat: true
-          # Force 0 exit code to allow SARIF file generation
-          # This will handover control about PR rejection to the GitHub side
-          max-allowed-issues: 2147483647
-
-          # Upload the SARIF file generated in the previous step
-          # - name: Upload SARIF results file
-          #   uses: github/codeql-action/upload-sarif@main
-          #   with:
-          #     sarif_file: results.sarif
 
 
   build:
@@ -79,7 +35,8 @@ jobs:
           path: |
             target/*.jar
           if-no-files-found: error
-          retention-days: 3       
+          retention-days: 3     
+          
   helloworld-docker-image:
     runs-on: ubuntu-latest
     name: HelloWorld Docker build
@@ -99,7 +56,7 @@ jobs:
         working-directory: target
 
       - name: Docker build
-        run: docker build -t ${{ secrets.REGISTRY_USERNAME }}/helloworld:${{ github.sha }} -f Dockerfile helloworld
+        run: docker build -t  ${{ secrets.REGISTRY_USERNAME }}/helloworld:${{ github.sha }} .
 
       - name: Docker Login
         uses: docker/login-action@v1.10.0
@@ -111,5 +68,24 @@ jobs:
       - name: Docker Push
         run: docker push ${{ secrets.REGISTRY_USERNAME }}/helloworld:${{ github.sha }}
 
+  deploy-helloworld:
+    runs-on: ubuntu-latest
+    name: HelloWorld Kyma Deployment
+    needs: [helloworld-docker-image]
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v2
+
+      - name: Kubernetes set context
+        uses: Azure/k8s-set-context@v1.1
+        with:
+          cluster-type: generic
+          method: kubeconfig
+          kubeconfig: ${{ secrets.KUBECONFIG }}
+
+      - name: Deploy to Kyma
+        run: |
+          sed -i'' -e 's/:v1.2.0/:${{ github.sha }}/g' kyma/helloworld.yaml
+          kubectl apply -f  kyma
      
  
