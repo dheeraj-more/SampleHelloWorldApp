@@ -35,12 +35,7 @@ jobs:
       - name:  Maven build
         run: mvn -B package --file pom.xml
       
-      - name: Step 4 - Set up a cache for Maven
-        uses: actions/cache@v2
-        with:
-          path: ~/.m2
-          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
-          restore-keys: ${{ runner.os }}-m2
+     
           
       - name: Upload a helloworld Artifact
         uses: actions/upload-artifact@v2
