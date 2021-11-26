@@ -14,7 +14,9 @@ jobs:
   build:
     runs-on: ubuntu-latest
     name: Build
+
     # needs:  [codacy-analysis,  check-quality]
+
     steps:
     
       - name: Start Memory Space
@@ -35,7 +37,7 @@ jobs:
       - name:  Maven build
         run: mvn -B package --file pom.xml
       
-      - name: Step 4 - Set up a cache for Maven
+      - name: Set up a cache for Maven
         uses: actions/cache@v2
         with:
           path: ~/.m2
